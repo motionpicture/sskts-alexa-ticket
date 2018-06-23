@@ -104,11 +104,11 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
         const request = <IntentRequest>requestEnvelope.request;
 
         console.log('request.intent.slots:', request.intent.slots);
-        const date = (request.intent.slots !== undefined) ? request.intent.slots.Date.value : undefined;
-        const movieName = (request.intent.slots !== undefined) ? request.intent.slots.MovieName.value : undefined;
+        const when = (request.intent.slots !== undefined) ? request.intent.slots.date.value : undefined;
+        const what = (request.intent.slots !== undefined) ? request.intent.slots.movie.value : undefined;
 
         // 日付の指定がなければ質問
-        if (date === undefined) {
+        if (when === undefined) {
             attributesManager.setSessionAttributes({
                 state: OrderState.Start
             });
@@ -128,15 +128,15 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
                 auth: authClient
             });
             let events = await eventService.searchIndividualScreeningEvent({
-                startFrom: moment(`${date}T00:00:00+09:00`).toDate(),
-                startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate()
+                startFrom: moment(`${when}T00:00:00+09:00`).toDate(),
+                startThrough: moment(`${when}T00:00:00+09:00`).add(1, 'day').toDate()
             });
 
             let speechText: string;
-            if (movieName !== undefined) {
+            if (what !== undefined) {
                 // 検索ワードでイベント検索
                 events = events.filter((e) => {
-                    const regex = new RegExp(movieName)
+                    const regex = new RegExp(what)
                     return regex.test(e.name.ja)
                         || regex.test(e.name.en)
                         || regex.test(e.workPerformed.name)
@@ -145,21 +145,21 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
                         || regex.test(e.superEvent.kanaName)
                         || regex.test(e.superEvent.alternativeHeadline);
                 });
-                speechText = `${date}の${movieName}のスケジュールは以下の通りです。
+                speechText = `${when}の${what}のスケジュールは以下の通りです。
 <break time="500ms"/>
 ${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
 何をご覧になりますか？`;
             } else {
                 // tslint:disable-next-line:no-magic-numbers
                 events = events.slice(0, 3);
-                speechText = `${date}のスケジュールは以下の通りです。
+                speechText = `${when}のスケジュールは以下の通りです。
 <break time="500ms"/>
 ${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
 何をご覧になりますか？`;
             }
 
             attributesManager.setSessionAttributes({
-                eventDate: date,
+                eventDate: when,
                 state: OrderState.DateFixed
             });
 
@@ -191,7 +191,7 @@ const GetEventStartDateIntentHandler: Alexa.RequestHandler = {
             throw new Error('スロットが見つかりません');
         }
         console.log('request.intent.slots:', request.intent.slots);
-        const date = request.intent.slots.Date.value
+        const when = request.intent.slots.date.value
 
         // イベント検索
         const eventService = new ssktsapi.service.Event({
@@ -199,18 +199,18 @@ const GetEventStartDateIntentHandler: Alexa.RequestHandler = {
             auth: authClient
         });
         let events = await eventService.searchIndividualScreeningEvent({
-            startFrom: moment(`${date}T00:00:00+09:00`).toDate(),
-            startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate()
+            startFrom: moment(`${when}T00:00:00+09:00`).toDate(),
+            startThrough: moment(`${when}T00:00:00+09:00`).add(1, 'day').toDate()
         });
         // tslint:disable-next-line:no-magic-numbers
         events = events.slice(0, 3);
 
         attributesManager.setSessionAttributes({
-            eventDate: date,
+            eventDate: when,
             state: OrderState.DateFixed
         });
 
-        const speechText = `${date}の上映作品は以下の通りです。
+        const speechText = `${when}の上映作品は以下の通りです。
 <break time="500ms"/>
 ${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
 何をご覧になりますか？`;
@@ -242,7 +242,7 @@ const FixEventIntentHandler: Alexa.RequestHandler = {
             throw new Error('スロットが見つかりません');
         }
         console.log('request.intent.slots:', request.intent.slots);
-        const movieName = request.intent.slots.MovieName.value
+        const what = request.intent.slots.movie.value
 
         const session = handlerInput.attributesManager.getSessionAttributes();
         const eventDate = session.eventDate;
@@ -261,14 +261,14 @@ const FixEventIntentHandler: Alexa.RequestHandler = {
 
         const sessionAttribute = {
             eventDate: eventDate,
-            movieName: movieName,
+            movieName: what,
             state: OrderState.EventFixed
         };
         attributesManager.setSessionAttributes(sessionAttribute);
 
         const speechText = `<p>以下の通り注文を受け付けます。</p>
 <p>${moment(events[0].startDate).format('YYYY-MM-DD HH:mm')}</p>
-<p>${movieName}</p>
+<p>${what}</p>
 <p>決済方法<break time="500ms"/>クレジットカード</p>
 <p>よろしいですか？</p>`;
 

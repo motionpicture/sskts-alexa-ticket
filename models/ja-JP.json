@@ -2,7 +2,43 @@
   "interactionModel": {
     "languageModel": {
       "invocationName": "シネマサンシャインチケット",
-      "types": [],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "見たい",
+                "synonyms": []
+              }
+            },
+            {
+              "name": {
+                "value": "を見たい",
+                "synonyms": []
+              }
+            },
+            {
+              "name": {
+                "value": "が見たい",
+                "synonyms": []
+              }
+            },
+            {
+              "name": {
+                "value": "予約したい",
+                "synonyms": []
+              }
+            },
+            {
+              "name": {
+                "value": "を予約したい",
+                "synonyms": []
+              }
+            }
+          ],
+          "name": "IWantToWatchType"
+        }
+      ],
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
@@ -33,52 +69,56 @@
           "name": "StartOrder",
           "slots": [
             {
-              "name": "Date",
+              "name": "date",
               "type": "AMAZON.DATE"
             },
             {
-              "name": "MovieName",
+              "name": "city",
+              "type": "AMAZON.City"
+            },
+            {
+              "name": "movie",
               "type": "AMAZON.Movie"
+            },
+            {
+              "name": "I_Want_To_Watch",
+              "type": "IWantToWatchType"
             }
           ],
           "samples": [
-            "座席予約",
-            "予約",
-            "{Date} 予約したい",
-            "映画見たい",
-            "映画が見たい",
-            "映画を見たい",
-            "{Date} 映画見たい",
-            "{Date} 映画が見たい",
-            "{Date} 映画を見たい",
-            "{Date} {MovieName} が見たい",
-            "{Date} {MovieName} 見たい"
+            "{date} {city} で映画 {I_Want_To_Watch}",
+            "{date} 映画 {I_Want_To_Watch}",
+            "{date} {city} で {movie} {I_Want_To_Watch}",
+            "{date} {movie} {I_Want_To_Watch}"
           ]
         },
         {
           "name": "GetEventStartDate",
           "slots": [
             {
-              "name": "Date",
+              "name": "date",
               "type": "AMAZON.DATE"
             }
           ],
           "samples": [
-            "{Date}"
+            "{date}"
           ]
         },
         {
           "name": "FixEvent",
           "slots": [
             {
-              "name": "MovieName",
+              "name": "movie",
               "type": "AMAZON.Movie"
+            },
+            {
+              "name": "I_Want_To_Watch",
+              "type": "IWantToWatchType"
             }
           ],
           "samples": [
-            "{MovieName} が見たい",
-            "{MovieName} を見たい",
-            "{MovieName}"
+            "{movie} {I_Want_To_Watch}",
+            "{movie}"
           ]
         }
       ]
