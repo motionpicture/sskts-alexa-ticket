@@ -23,7 +23,7 @@
             "eTag": "edceaa72ac13757059cb768ccbdf3b67"
           },
           "ja-JP": {
-            "eTag": "a3c5774f9f546b092b0df916782f788c"
+            "eTag": "cb047e756e51be557f4700ee97c81cf7"
           }
         },
         "lambda": [
@@ -34,7 +34,7 @@
             "alexaUsage": [
               "custom/default"
             ],
-            "revisionId": "d906a458-fcdc-4ecf-9962-6ecdc2f788d4"
+            "revisionId": "1ba9ee32-54b6-4b53-8044-1afeeb6c0e66"
           }
         ]
       },

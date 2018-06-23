@@ -25,17 +25,20 @@ enum OrderState {
     EventFixed = 'EventFixed'
 }
 
+/**
+ * スキル呼び出しハンドラー
+ */
 const LaunchRequestHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Welcome to the Alexa Skills Kit, you can say hello!';
+        const speechText = 'シネマサンシャインチケットへようこそ。ご用件をおっしゃってください。';
 
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
-            .withSimpleCard('Hello World', speechText)
+            // .withSimpleCard('Hello World', speechText)
             .getResponse();
     },
 };
@@ -61,12 +64,12 @@ const HelpIntentHandler: Alexa.RequestHandler = {
             && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
-        const speechText = 'こんにちは。と言ってみてください。';
+        const speechText = 'いつ、何々が見たい、と言ってみてください。';
 
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
-            .withSimpleCard('Hello World', speechText)
+            // .withSimpleCard('Hello World', speechText)
             .getResponse();
     },
 };
@@ -82,7 +85,7 @@ const CancelAndStopIntentHandler: Alexa.RequestHandler = {
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .withSimpleCard('Hello World', speechText)
+            // .withSimpleCard('Hello World', speechText)
             .getResponse();
     },
 };
@@ -92,11 +95,8 @@ const CancelAndStopIntentHandler: Alexa.RequestHandler = {
  */
 const StartOrderIntentHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
-        // const session = handlerInput.attributesManager.getSessionAttributes();
-        // const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'StartOrder';
-        // && state === OrderState.Start;
     },
     async handle(handlerInput) {
         // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
@@ -109,7 +109,6 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
         // 日付の指定がなければ質問
         if (date === undefined) {
             attributesManager.setSessionAttributes({
-                eventDate: date,
                 state: OrderState.Start
             });
 
@@ -157,11 +156,11 @@ ${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>
  */
 const GetEventStartDateIntentHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
-        // const session = handlerInput.attributesManager.getSessionAttributes();
-        // const state = session.state;
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'GetEventStartDate';
-        // && state === OrderState.Start;
+            && handlerInput.requestEnvelope.request.intent.name === 'GetEventStartDate'
+            && state === OrderState.Start;
     },
     async handle(handlerInput) {
         // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
@@ -203,42 +202,92 @@ ${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>
     }
 };
 
-// const secondHandlers: Alexa.Handlers<any> = Alexa.CreateStateHandler(OrderState.DateFixed, {
-//     'FixEvent': async function () {
-//         // const date = this.event.attributes.eventDate;
-//         const date = this.attributes.eventDate;
-//         const movieName = this.event.request.intent.slots.MovieName.value;
+/**
+ * イベント確定ハンドラー
+ */
+const FixEventIntentHandler: Alexa.RequestHandler = {
+    canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'FixEvent'
+            && state === OrderState.DateFixed;
+    },
+    async handle(handlerInput) {
+        // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
+        const { requestEnvelope, attributesManager } = handlerInput;
+        const request = <IntentRequest>requestEnvelope.request;
 
-//         // イベント検索
-//         const eventService = new ssktsapi.service.Event({
-//             endpoint: <string>process.env.API_ENDPOINT,
-//             auth: authClient
-//         });
-//         let events = await eventService.searchIndividualScreeningEvent({
-//             startFrom: moment(`${date}T00:00:00+09:00`).toDate(),
-//             startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate()
-//         });
-//         // tslint:disable-next-line:no-magic-numbers
-//         events = events.slice(0, 3);
+        if (request.intent.slots === undefined) {
+            throw new Error('スロットが見つかりません');
+        }
+        console.log('request.intent.slots:', request.intent.slots);
+        const movieName = request.intent.slots.MovieName.value
 
-//         this.attributes.eventDate = date;
-//         this.attributes.movieName = movieName;
-//         this.handler.state = OrderState.EventFixed;
-//         this.emit(':ask', `<p>以下の通り注文を受け付けます。</p>
-// <p>${moment(events[0].startDate).format('YYYY-MM-DD HH:mm')}</p>
-// <p>${movieName}</p>
-// <p>決済方法<break time="500ms"/>クレジットカード</p>
-// <p>よろしいですか？</p>`);
-//     }
-// });
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const eventDate = session.eventDate;
 
-// const thirdHandlers: Alexa.Handlers<any> = Alexa.CreateStateHandler(OrderState.EventFixed, {
-//     'ConfirmOrder': async function () {
-//         this.handler.state = undefined;
-//         this.emit(':tell', `座席を予約しました。
-// ご来場お待ちしております。`);
-//     }
-// });
+        // イベント検索
+        const eventService = new ssktsapi.service.Event({
+            endpoint: <string>process.env.API_ENDPOINT,
+            auth: authClient
+        });
+        let events = await eventService.searchIndividualScreeningEvent({
+            startFrom: moment(`${eventDate}T00:00:00+09:00`).toDate(),
+            startThrough: moment(`${eventDate}T00:00:00+09:00`).add(1, 'day').toDate()
+        });
+        // tslint:disable-next-line:no-magic-numbers
+        events = events.slice(0, 3);
+
+        const sessionAttribute = {
+            eventDate: eventDate,
+            movieName: movieName,
+            state: OrderState.EventFixed
+        };
+        attributesManager.setSessionAttributes(sessionAttribute);
+
+        const speechText = `<p>以下の通り注文を受け付けます。</p>
+<p>${moment(events[0].startDate).format('YYYY-MM-DD HH:mm')}</p>
+<p>${movieName}</p>
+<p>決済方法<break time="500ms"/>クレジットカード</p>
+<p>よろしいですか？</p>`;
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .getResponse();
+    }
+}
+
+/**
+ * Yesハンドラー
+ */
+const YesIntentHandler: Alexa.RequestHandler = {
+    canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.YesIntent'
+            && state === OrderState.EventFixed;
+    },
+    async handle(handlerInput) {
+        // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
+        const { attributesManager } = handlerInput;
+        // const request = <IntentRequest>requestEnvelope.request;
+
+        const sessionAttribute = {
+        };
+        attributesManager.setSessionAttributes(sessionAttribute);
+
+        const speechText = `座席を予約しました。
+ご来場お待ちしております。`;
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .getResponse();
+    }
+}
 
 const SessionEndedRequestHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
@@ -273,8 +322,10 @@ exports.handler = Alexa.SkillBuilders.custom()
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
-        StartOrderIntentHandler,
-        GetEventStartDateIntentHandler
+        YesIntentHandler,
+        FixEventIntentHandler,
+        GetEventStartDateIntentHandler,
+        StartOrderIntentHandler
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();

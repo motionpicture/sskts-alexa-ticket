@@ -17,6 +17,10 @@
           "samples": []
         },
         {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
           "name": "HelloWorldIntent",
           "slots": [],
           "samples": [
@@ -31,6 +35,10 @@
             {
               "name": "Date",
               "type": "AMAZON.DATE"
+            },
+            {
+              "name": "MovieName",
+              "type": "AMAZON.Movie"
             }
           ],
           "samples": [
@@ -42,7 +50,9 @@
             "映画を見たい",
             "{Date} 映画見たい",
             "{Date} 映画が見たい",
-            "{Date} 映画を見たい"
+            "{Date} 映画を見たい",
+            "{Date} {MovieName} が見たい",
+            "{Date} {MovieName} 見たい"
           ]
         },
         {
@@ -62,12 +72,13 @@
           "slots": [
             {
               "name": "MovieName",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.Movie"
             }
           ],
           "samples": [
             "{MovieName} が見たい",
-            "{MovieName} を見たい"
+            "{MovieName} を見たい",
+            "{MovieName}"
           ]
         }
       ]

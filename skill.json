@@ -13,9 +13,7 @@
         "en-US": {
           "summary": "Cinema Sunshine Ticket",
           "examplePhrases": [
-            "Alexa open greeter",
-            "Alexa tell hello world hello",
-            "Alexa ask hello world say hello"
+            "Alexa open Cinema Sunshine Ticket"
           ],
           "name": "sskts-alexa-ticket",
           "description": "Cinema Sunshine Ticket"
