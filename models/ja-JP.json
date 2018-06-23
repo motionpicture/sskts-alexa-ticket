@@ -1,0 +1,76 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "シネマサンシャインチケット",
+      "types": [],
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "HelloWorldIntent",
+          "slots": [],
+          "samples": [
+            "こんにちは",
+            "こんにちはと言って",
+            "ハロー"
+          ]
+        },
+        {
+          "name": "StartOrder",
+          "slots": [
+            {
+              "name": "Date",
+              "type": "AMAZON.DATE"
+            }
+          ],
+          "samples": [
+            "座席予約",
+            "予約",
+            "{Date} 予約したい",
+            "映画見たい",
+            "映画が見たい",
+            "映画を見たい",
+            "{Date} 映画見たい",
+            "{Date} 映画が見たい",
+            "{Date} 映画を見たい"
+          ]
+        },
+        {
+          "name": "GetEventStartDate",
+          "slots": [
+            {
+              "name": "Date",
+              "type": "AMAZON.DATE"
+            }
+          ],
+          "samples": [
+            "{Date}"
+          ]
+        },
+        {
+          "name": "FixEvent",
+          "slots": [
+            {
+              "name": "MovieName",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "{MovieName} が見たい",
+            "{MovieName} を見たい"
+          ]
+        }
+      ]
+    }
+  }
+}
