@@ -105,6 +105,7 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
 
         console.log('request.intent.slots:', request.intent.slots);
         const date = (request.intent.slots !== undefined) ? request.intent.slots.Date.value : undefined;
+        const movieName = (request.intent.slots !== undefined) ? request.intent.slots.MovieName.value : undefined;
 
         // 日付の指定がなければ質問
         if (date === undefined) {
@@ -130,18 +131,37 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
                 startFrom: moment(`${date}T00:00:00+09:00`).toDate(),
                 startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate()
             });
-            // tslint:disable-next-line:no-magic-numbers
-            events = events.slice(0, 3);
+
+            let speechText: string;
+            if (movieName !== undefined) {
+                // 検索ワードでイベント検索
+                events = events.filter((e) => {
+                    const regex = new RegExp(movieName)
+                    return regex.test(e.name.ja)
+                        || regex.test(e.name.en)
+                        || regex.test(e.workPerformed.name)
+                        || regex.test(e.superEvent.name.ja)
+                        || regex.test(e.superEvent.name.en)
+                        || regex.test(e.superEvent.kanaName)
+                        || regex.test(e.superEvent.alternativeHeadline);
+                });
+                speechText = `${date}の${movieName}のスケジュールは以下の通りです。
+<break time="500ms"/>
+${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
+何をご覧になりますか？`;
+            } else {
+                // tslint:disable-next-line:no-magic-numbers
+                events = events.slice(0, 3);
+                speechText = `${date}のスケジュールは以下の通りです。
+<break time="500ms"/>
+${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
+何をご覧になりますか？`;
+            }
 
             attributesManager.setSessionAttributes({
                 eventDate: date,
                 state: OrderState.DateFixed
             });
-
-            const speechText = `${date}の上映作品は以下の通りです。
-<break time="500ms"/>
-${events.map((e) => `${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.workPerformed.name}<break time="1000ms"/>`)}
-何をご覧になりますか？`;
 
             return handlerInput.responseBuilder
                 .speak(speechText)
