@@ -27,9 +27,15 @@ authClient.setCredentials({
 console.log('authClient:', authClient);
 var OrderState;
 (function (OrderState) {
-    OrderState["Start"] = "Start";
-    OrderState["DateFixed"] = "DateFixed";
-    OrderState["EventFixed"] = "EventFixed";
+    // Start = 'Start',
+    /**
+     * イベント開始時間選択中
+     */
+    OrderState["SelectingEventTime"] = "SelectingEventTime";
+    /**
+     * 注文確認中
+     */
+    OrderState["Confirming"] = "Confirming";
 })(OrderState || (OrderState = {}));
 const theaters = [
     {
@@ -49,86 +55,6 @@ const theaters = [
         name: 'ユーカリが丘'
     }
 ];
-function searchEvents(searchConditions) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let result = 'いつご覧になりますか？';
-        const eventService = new ssktsapi.service.Event({
-            endpoint: process.env.API_ENDPOINT,
-            auth: authClient
-        });
-        const placeService = new ssktsapi.service.Place({
-            endpoint: process.env.API_ENDPOINT,
-            auth: authClient
-        });
-        // 日付の指定がなければ質問
-        if (searchConditions.date === undefined) {
-            result = 'いつご覧になりますか？';
-        }
-        else {
-            if (searchConditions.theater === undefined) {
-                // 劇場未指定であれば質問
-                result = `利用可能な劇場は以下の通りです。
-${theaters.map((t) => `<break time="500ms"/>${t.name}`)}
-<break time="500ms"/>どこでご覧になりますか？
-`;
-            }
-            else {
-                if (searchConditions.movie === undefined) {
-                    // 作品未指定であれば質問
-                    const movieTheater = yield placeService.findMovieTheater({ branchCode: searchConditions.theater });
-                    let events = yield eventService.searchIndividualScreeningEvent({
-                        superEventLocationIdentifiers: [movieTheater.identifier],
-                        startFrom: moment(`${searchConditions.date}T00:00:00+09:00`).toDate(),
-                        startThrough: moment(`${searchConditions.date}T00:00:00+09:00`).add(1, 'day').toDate()
-                    });
-                    let workPerformed = events.map((e) => e.superEvent.workPerformed);
-                    const workPerformedNames = [...new Set(workPerformed.map((p) => p.name))];
-                    result = `${searchConditions.date}
-<break time="500ms"/>${movieTheater.name.ja}における上映作品は以下の通りです。
-${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
-<break time="500ms"/>何をご覧になりますか？
-`;
-                }
-            }
-        }
-        // 検索条件がそろったらイベント検索
-        if (searchConditions.date !== undefined
-            && searchConditions.theater !== undefined
-            && searchConditions.movie !== undefined) {
-            const movieName = searchConditions.movie;
-            const movieTheater = yield placeService.findMovieTheater({ branchCode: searchConditions.theater });
-            let events = yield eventService.searchIndividualScreeningEvent({
-                superEventLocationIdentifiers: [movieTheater.identifier],
-                startFrom: moment(`${searchConditions.date}T00:00:00+09:00`).toDate(),
-                startThrough: moment(`${searchConditions.date}T00:00:00+09:00`).add(1, 'day').toDate()
-            });
-            // 検索ワードでイベント検索
-            events = events.filter((e) => {
-                const regex = new RegExp(movieName);
-                return regex.test(e.name.ja)
-                    || regex.test(e.name.en)
-                    || regex.test(e.workPerformed.name)
-                    || regex.test(e.superEvent.name.ja)
-                    || regex.test(e.superEvent.name.en)
-                    || regex.test(e.superEvent.kanaName)
-                    || regex.test(e.superEvent.alternativeHeadline);
-            });
-            if (events.length === 0) {
-                result = `${searchConditions.date}
-<break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは見つかりませんでした。`;
-            }
-            else {
-                result = `${searchConditions.date}
-<break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは以下の通りです。
-${events.map((e) => `<break time="1000ms"/>${moment(e.startDate).format('HH:mm')}<break time="500ms"/>${e.name.ja}`)}
-<break time="500ms"/>どちらをご覧になりますか？`;
-            }
-        }
-        return result;
-    });
-}
 /**
  * スキル呼び出しハンドラー
  */
@@ -209,7 +135,7 @@ const StartOrderIntentHandler = {
             const sessionAttributes = attributesManager.getSessionAttributes();
             // 各検索パラメーターの指定があればセッションに保管
             if (date !== undefined) {
-                sessionAttributes.eventDate = date;
+                sessionAttributes.date = date;
                 sessionAttributes.theater = undefined;
                 sessionAttributes.movie = undefined;
             }
@@ -219,11 +145,90 @@ const StartOrderIntentHandler = {
             if (movie !== undefined) {
                 sessionAttributes.movie = movie;
             }
-            let speechText = yield searchEvents({
-                date: sessionAttributes.eventDate,
-                theater: sessionAttributes.theater,
-                movie: sessionAttributes.movie,
+            let speechText = 'いつご覧になりますか？';
+            const eventService = new ssktsapi.service.Event({
+                endpoint: process.env.API_ENDPOINT,
+                auth: authClient
             });
+            const placeService = new ssktsapi.service.Place({
+                endpoint: process.env.API_ENDPOINT,
+                auth: authClient
+            });
+            // 日付の指定がなければ質問
+            if (sessionAttributes.date === undefined) {
+                speechText = 'いつご覧になりますか？';
+            }
+            else {
+                if (sessionAttributes.theater === undefined) {
+                    // 劇場未指定であれば質問
+                    speechText = `利用可能な劇場は以下の通りです。
+${theaters.map((t) => `<break time="500ms"/>${t.name}`)}
+<break time="500ms"/>どこでご覧になりますか？
+`;
+                }
+                else {
+                    if (sessionAttributes.movie === undefined) {
+                        // 作品未指定であれば質問
+                        const movieTheater = yield placeService.findMovieTheater({ branchCode: sessionAttributes.theater });
+                        let events = yield eventService.searchIndividualScreeningEvent({
+                            superEventLocationIdentifiers: [movieTheater.identifier],
+                            startFrom: moment(`${sessionAttributes.date}T00:00:00+09:00`).toDate(),
+                            startThrough: moment(`${sessionAttributes.date}T00:00:00+09:00`).add(1, 'day').toDate()
+                        });
+                        let workPerformed = events.map((e) => e.superEvent.workPerformed);
+                        const workPerformedNames = [...new Set(workPerformed.map((p) => p.name))];
+                        speechText = `${sessionAttributes.date}
+<break time="500ms"/>${movieTheater.name.ja}における上映作品は以下の通りです。
+${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
+<break time="500ms"/>何をご覧になりますか？
+`;
+                    }
+                }
+            }
+            // 検索条件がそろったらイベント検索
+            if (sessionAttributes.date !== undefined
+                && sessionAttributes.theater !== undefined
+                && sessionAttributes.movie !== undefined) {
+                const movieName = sessionAttributes.movie;
+                const movieTheater = yield placeService.findMovieTheater({ branchCode: sessionAttributes.theater });
+                let events = yield eventService.searchIndividualScreeningEvent({
+                    superEventLocationIdentifiers: [movieTheater.identifier],
+                    startFrom: moment(`${sessionAttributes.date}T00:00:00+09:00`).toDate(),
+                    startThrough: moment(`${sessionAttributes.date}T00:00:00+09:00`).add(1, 'day').toDate()
+                });
+                // 検索ワードでイベント検索
+                events = events.filter((e) => {
+                    const regex = new RegExp(movieName);
+                    return regex.test(e.name.ja)
+                        || regex.test(e.name.en)
+                        || regex.test(e.workPerformed.name)
+                        || regex.test(e.superEvent.name.ja)
+                        || regex.test(e.superEvent.name.en)
+                        || regex.test(e.superEvent.kanaName)
+                        || regex.test(e.superEvent.alternativeHeadline);
+                });
+                if (events.length === 0) {
+                    speechText = `${sessionAttributes.date}
+<break time="500ms"/>${movieTheater.name.ja}における
+<break time="500ms"/>${movieName}のスケジュールは見つかりませんでした。`;
+                }
+                else {
+                    const eventChoices = events.map((e, index) => {
+                        return {
+                            code: index + 1,
+                            value: e.identifier,
+                            name: `${moment(e.startDate).format('HH:mm')} ${e.name.ja}`
+                        };
+                    });
+                    sessionAttributes.state = OrderState.SelectingEventTime;
+                    sessionAttributes.eventChoices = eventChoices;
+                    speechText = `${sessionAttributes.date}
+<break time="500ms"/>${movieTheater.name.ja}における
+<break time="500ms"/>${movieName}のスケジュールは以下の通りです。
+${eventChoices.map((c) => `<break time="1000ms"/>${c.code}番<break time="500ms"/>${c.name}`)}
+<break time="500ms"/>どちらをご覧になりますか？番号でお答えください。`;
+                }
+            }
             // 検索条件をセッションに保管
             attributesManager.setSessionAttributes(sessionAttributes);
             return handlerInput.responseBuilder.speak(speechText).reprompt(speechText).getResponse();
@@ -233,13 +238,13 @@ const StartOrderIntentHandler = {
 /**
  * イベント確定ハンドラー
  */
-const FixEventIntentHandler = {
+const SelectEventTimeIntentHandler = {
     canHandle(handlerInput) {
         const session = handlerInput.attributesManager.getSessionAttributes();
         const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'FixEvent'
-            && state === OrderState.DateFixed;
+            && handlerInput.requestEnvelope.request.intent.name === 'SelectEventTime'
+            && state === OrderState.SelectingEventTime;
     },
     handle(handlerInput) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -250,31 +255,30 @@ const FixEventIntentHandler = {
                 throw new Error('スロットが見つかりません');
             }
             console.log('request.intent.slots:', request.intent.slots);
-            const what = request.intent.slots.movie.value;
-            const session = handlerInput.attributesManager.getSessionAttributes();
-            const eventDate = session.eventDate;
+            const choice = request.intent.slots.choice.value;
+            const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+            let speechText = 'イベントが見つかりません。';
             // イベント検索
-            const eventService = new ssktsapi.service.Event({
-                endpoint: process.env.API_ENDPOINT,
-                auth: authClient
-            });
-            let events = yield eventService.searchIndividualScreeningEvent({
-                startFrom: moment(`${eventDate}T00:00:00+09:00`).toDate(),
-                startThrough: moment(`${eventDate}T00:00:00+09:00`).add(1, 'day').toDate()
-            });
-            // tslint:disable-next-line:no-magic-numbers
-            events = events.slice(0, 3);
-            const sessionAttribute = {
-                eventDate: eventDate,
-                movieName: what,
-                state: OrderState.EventFixed
-            };
-            attributesManager.setSessionAttributes(sessionAttribute);
-            const speechText = `<p>以下の通り注文を受け付けます。</p>
-<p>${moment(events[0].startDate).format('YYYY-MM-DD HH:mm')}</p>
-<p>${what}</p>
-<p>決済方法<break time="500ms"/>クレジットカード</p>
-<p>よろしいですか？</p>`;
+            const eventChoice = sessionAttributes.eventChoices.find((c) => c.code === Number(choice));
+            if (eventChoice !== undefined) {
+                const eventService = new ssktsapi.service.Event({
+                    endpoint: process.env.API_ENDPOINT,
+                    auth: authClient
+                });
+                const event = yield eventService.findIndividualScreeningEvent({
+                    identifier: eventChoice.value
+                });
+                if (event !== undefined) {
+                    sessionAttributes.eventIdentifier = eventChoice.value;
+                    sessionAttributes.state = OrderState.Confirming;
+                    attributesManager.setSessionAttributes(sessionAttributes);
+                    speechText = `<p>以下の通り注文を受け付けます。</p>
+        <p>${moment(event.startDate).format('YYYY-MM-DD HH:mm')}</p>
+        <p>${event.name.ja}</p>
+        <p>決済方法<break time="500ms"/>クレジットカード</p>
+        <p>注文を確定しますか？</p>`;
+                }
+            }
             return handlerInput.responseBuilder
                 .speak(speechText)
                 .reprompt(speechText)
@@ -291,15 +295,16 @@ const YesIntentHandler = {
         const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.YesIntent'
-            && state === OrderState.EventFixed;
+            && state === OrderState.Confirming;
     },
     handle(handlerInput) {
         return __awaiter(this, void 0, void 0, function* () {
             // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
             const { attributesManager } = handlerInput;
             // const request = <IntentRequest>requestEnvelope.request;
-            const sessionAttribute = {};
-            attributesManager.setSessionAttributes(sessionAttribute);
+            attributesManager.setSessionAttributes({
+                state: undefined
+            });
             const speechText = `座席を予約しました。
 ご来場お待ちしております。`;
             return handlerInput.responseBuilder
@@ -325,11 +330,11 @@ const ErrorHandler = {
     },
     handle(handlerInput, error) {
         console.log(`Error handled: ${error.message}`);
-        const speechText = 'ごめんなさ。よく分かりませんでした。もう一度おっしゃってください。';
+        const speechText = 'ごめんなさい。よく分かりませんでした。もう一度おっしゃってください。';
         return handlerInput.responseBuilder.speak(speechText).reprompt(speechText).getResponse();
     },
 };
 exports.handler = Alexa.SkillBuilders.custom()
-    .addRequestHandlers(LaunchRequestHandler, HelloWorldIntentHandler, HelpIntentHandler, CancelAndStopIntentHandler, SessionEndedRequestHandler, YesIntentHandler, FixEventIntentHandler, StartOrderIntentHandler)
+    .addRequestHandlers(LaunchRequestHandler, HelloWorldIntentHandler, HelpIntentHandler, CancelAndStopIntentHandler, SessionEndedRequestHandler, YesIntentHandler, SelectEventTimeIntentHandler, StartOrderIntentHandler)
     .addErrorHandlers(ErrorHandler)
     .lambda();

@@ -138,20 +138,17 @@
           ]
         },
         {
-          "name": "FixEvent",
+          "name": "SelectEventTime",
           "slots": [
             {
-              "name": "movie",
-              "type": "AMAZON.Movie"
-            },
-            {
-              "name": "I_Want_To_Watch",
-              "type": "IWantToWatchType"
+              "name": "choice",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
-            "{movie} {I_Want_To_Watch}",
-            "{movie}"
+            "{choice} 番",
+            "{choice} ばん",
+            "{choice}"
           ]
         }
       ]
