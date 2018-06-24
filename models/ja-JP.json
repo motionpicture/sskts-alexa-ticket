@@ -4,35 +4,74 @@
       "invocationName": "シネマサンシャインチケット",
       "types": [
         {
+          "name": "LIST_OF_THEATERS",
+          "values": [
+            {
+              "id": "101",
+              "name": {
+                "value": "池袋",
+                "synonyms": [
+                  "ぶくろ",
+                  "ブクロ",
+                  "有楽町",
+                  "新宿"
+                ]
+              }
+            },
+            {
+              "id": "112",
+              "name": {
+                "value": "北島",
+                "synonyms": [
+                  "きたじま",
+                  "キタジマ"
+                ]
+              }
+            },
+            {
+              "id": "118",
+              "name": {
+                "value": "姶良",
+                "synonyms": [
+                  "あいら",
+                  "アイラ",
+                  "鹿児島",
+                  "桜島"
+                ]
+              }
+            },
+            {
+              "id": "119",
+              "name": {
+                "value": "ユーカリが丘",
+                "synonyms": [
+                  "ゆうかりがおか",
+                  "ゆーかりがおか",
+                  "ゆうかり",
+                  "ゆーかり",
+                  "ユウカリガオカ",
+                  "ユーカリガオカ",
+                  "ユウカリ",
+                  "ユーカリ",
+                  "千葉"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "values": [
             {
               "name": {
                 "value": "見たい",
-                "synonyms": []
-              }
-            },
-            {
-              "name": {
-                "value": "を見たい",
-                "synonyms": []
-              }
-            },
-            {
-              "name": {
-                "value": "が見たい",
-                "synonyms": []
-              }
-            },
-            {
-              "name": {
-                "value": "予約したい",
-                "synonyms": []
-              }
-            },
-            {
-              "name": {
-                "value": "を予約したい",
-                "synonyms": []
+                "synonyms": [
+                  "を見たい",
+                  "が見たい",
+                  "予約したい",
+                  "を予約したい",
+                  "のスケジュール教えて",
+                  "で何やってる"
+                ]
               }
             }
           ],
@@ -73,8 +112,8 @@
               "type": "AMAZON.DATE"
             },
             {
-              "name": "city",
-              "type": "AMAZON.City"
+              "name": "theater",
+              "type": "LIST_OF_THEATERS"
             },
             {
               "name": "movie",
@@ -86,22 +125,16 @@
             }
           ],
           "samples": [
-            "{date} {city} で映画 {I_Want_To_Watch}",
-            "{date} 映画 {I_Want_To_Watch}",
-            "{date} {city} で {movie} {I_Want_To_Watch}",
-            "{date} {movie} {I_Want_To_Watch}"
-          ]
-        },
-        {
-          "name": "GetEventStartDate",
-          "slots": [
-            {
-              "name": "date",
-              "type": "AMAZON.DATE"
-            }
-          ],
-          "samples": [
-            "{date}"
+            "{date} {theater} で {movie} {I_Want_To_Watch}",
+            "{date} {movie} {I_Want_To_Watch}",
+            "{date} {I_Want_To_Watch}",
+            "{date}",
+            "{theater} で {movie} {I_Want_To_Watch}",
+            "{theater} で {I_Want_To_Watch}",
+            "{theater}",
+            "{movie} {I_Want_To_Watch}",
+            "{movie}",
+            "映画 {I_Want_To_Watch}"
           ]
         },
         {
