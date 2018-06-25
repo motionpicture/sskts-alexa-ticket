@@ -4,7 +4,7 @@
 import * as  ssktsapi from '@motionpicture/sskts-api-nodejs-client';
 import * as Alexa from 'ask-sdk-core';
 import { IntentRequest, SessionEndedRequest } from 'ask-sdk-model';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 
 // Alexaスキルアプリでアカウントリンク設定が完了済の想定でこのコードは動作します。
 const authClient = new ssktsapi.auth.OAuth2({
@@ -20,7 +20,6 @@ authClient.setCredentials({
 console.log('authClient:', authClient);
 
 enum OrderState {
-    // Start = 'Start',
     /**
      * イベント開始時間選択中
      */
@@ -50,6 +49,16 @@ const theaters = [
     }
 ];
 
+function login(handlerInput: Alexa.HandlerInput) {
+    if (handlerInput.requestEnvelope.session !== undefined) {
+        if (handlerInput.requestEnvelope.session.user.accessToken !== undefined) {
+            authClient.setCredentials({
+                access_token: handlerInput.requestEnvelope.session.user.accessToken
+            });
+        }
+    }
+}
+
 /**
  * スキル呼び出しハンドラー
  */
@@ -57,8 +66,15 @@ const LaunchRequestHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
-    handle(handlerInput) {
-        const speechText = 'シネマサンシャインチケットへようこそ。ご用件をおっしゃってください。';
+    async handle(handlerInput) {
+        login(handlerInput);
+
+        const personService = new ssktsapi.service.Person({
+            endpoint: <string>process.env.API_ENDPOINT,
+            auth: authClient
+        });
+        const contact = await personService.getContacts({ personId: 'me' });
+        const speechText = `${contact.familyName} ${contact.givenName}さん、シネマサンシャインチケットへようこそ。ご用件をおっしゃってください。`;
 
         return handlerInput.responseBuilder
             .speak(speechText)
@@ -124,6 +140,8 @@ const StartOrderIntentHandler: Alexa.RequestHandler = {
             && handlerInput.requestEnvelope.request.intent.name === 'StartOrder';
     },
     async handle(handlerInput) {
+        login(handlerInput);
+
         // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
         const { requestEnvelope, attributesManager } = handlerInput;
         const request = <IntentRequest>requestEnvelope.request;
@@ -185,8 +203,8 @@ ${theaters.map((t) => `<break time="500ms"/>${t.name}`)}
                     const workPerformedNames = [...new Set(workPerformed.map((p) => p.name))];
 
                     speechText = `${sessionAttributes.date}
-<break time="500ms"/>${movieTheater.name.ja}における上映作品は以下の通りです。
-${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
+<break time="500ms"/>${movieTheater.name.ja}における上映作品が${workPerformedNames.length}件見つかりました。
+${workPerformedNames.map((n, index) => `<break time="500ms"/>${index + 1}つ目<break time="300ms"/>${n}`)}
 <break time="500ms"/>何をご覧になりますか？
 `;
                 }
@@ -222,21 +240,23 @@ ${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
             if (events.length === 0) {
                 speechText = `${sessionAttributes.date}
 <break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは見つかりませんでした。`;
+<break time="500ms"/>${movieName}<break time="300ms"/>のスケジュールは見つかりませんでした。`;
             } else {
                 const eventChoices = events.map((e, index) => {
                     return {
                         code: index + 1,
                         value: e.identifier,
-                        name: `${moment(e.startDate).format('HH:mm')} ${e.name.ja}`
+                        time: `${moment(e.startDate).tz('Asia/Tokyo').format('HH:mm')}`,
+                        name: `${e.name.ja}`
                     }
                 });
                 sessionAttributes.state = OrderState.SelectingEventTime;
                 sessionAttributes.eventChoices = eventChoices;
                 speechText = `${sessionAttributes.date}
 <break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは以下の通りです。
-${eventChoices.map((c) => `<break time="1000ms"/>${c.code}番<break time="500ms"/>${c.name}`)}
+<break time="500ms"/>${movieName}<break time="300ms"/>のスケジュールが${eventChoices.length}件見つかりました。
+<break time="500ms"/>
+${eventChoices.map((c) => `<break time="1000ms"/>${c.code}番<break time="500ms"/>${c.time}<break time="500ms"/>${c.name}`)}
 <break time="500ms"/>どちらをご覧になりますか？番号でお答えください。`;
             }
         }
@@ -260,6 +280,8 @@ const SelectEventTimeIntentHandler: Alexa.RequestHandler = {
             && state === OrderState.SelectingEventTime;
     },
     async handle(handlerInput) {
+        login(handlerInput);
+
         // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
         const { requestEnvelope, attributesManager } = handlerInput;
         const request = <IntentRequest>requestEnvelope.request;
@@ -268,7 +290,11 @@ const SelectEventTimeIntentHandler: Alexa.RequestHandler = {
             throw new Error('スロットが見つかりません');
         }
         console.log('request.intent.slots:', request.intent.slots);
-        const choice = request.intent.slots.choice.value
+        const choice = (request.intent.slots !== undefined
+            && request.intent.slots.choice.resolutions !== undefined
+            && request.intent.slots.choice.resolutions.resolutionsPerAuthority !== undefined)
+            ? request.intent.slots.choice.resolutions.resolutionsPerAuthority[0].values[0].value.id
+            : undefined;
         const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
 
         let speechText = 'イベントが見つかりません。';
@@ -280,6 +306,11 @@ const SelectEventTimeIntentHandler: Alexa.RequestHandler = {
                 endpoint: <string>process.env.API_ENDPOINT,
                 auth: authClient
             });
+            const personService = new ssktsapi.service.Person({
+                endpoint: <string>process.env.API_ENDPOINT,
+                auth: authClient
+            });
+            const contact = await personService.getContacts({ personId: 'me' });
             const event = await eventService.findIndividualScreeningEvent({
                 identifier: eventChoice.value
             });
@@ -290,10 +321,12 @@ const SelectEventTimeIntentHandler: Alexa.RequestHandler = {
                 attributesManager.setSessionAttributes(sessionAttributes);
 
                 speechText = `<p>以下の通り注文を受け付けます。</p>
-        <p>${moment(event.startDate).format('YYYY-MM-DD HH:mm')}</p>
-        <p>${event.name.ja}</p>
-        <p>決済方法<break time="500ms"/>クレジットカード</p>
-        <p>注文を確定しますか？</p>`;
+<p>${contact.familyName} ${contact.givenName}さん</p>
+<p>${moment(event.startDate).tz('Asia/Tokyo').format('YYYY-MM-DD HH:mm')}</p>
+<p>${event.name.ja}</p>
+<p>${event.superEvent.location.name.ja}<break time="300ms"/>${event.location.name.ja}</p>
+<p>決済方法<break time="300ms"/>クレジットカード</p>
+<p>注文を確定しますか？</p>`;
             }
         }
 
@@ -334,6 +367,35 @@ const YesIntentHandler: Alexa.RequestHandler = {
     }
 }
 
+/**
+ * Noハンドラー
+ */
+const NoIntentHandler: Alexa.RequestHandler = {
+    canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.NoIntent'
+            && state === OrderState.Confirming;
+    },
+    async handle(handlerInput) {
+        // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
+        const { attributesManager } = handlerInput;
+        // const request = <IntentRequest>requestEnvelope.request;
+
+        attributesManager.setSessionAttributes({
+            state: undefined
+        });
+
+        const speechText = '注文をキャンセルしました。';
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .getResponse();
+    }
+}
+
 const SessionEndedRequestHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
@@ -366,6 +428,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
         YesIntentHandler,
+        NoIntentHandler,
         SelectEventTimeIntentHandler,
         StartOrderIntentHandler
     )

@@ -7,22 +7,35 @@
           "examplePhrases": [
             "アレクサ、シネマサンシャインチケットを呼んで"
           ],
-          "name": "sskts-alexa-ticket",
-          "description": "シネマサンシャインチケット"
-        },
-        "en-US": {
-          "summary": "Cinema Sunshine Ticket",
-          "examplePhrases": [
-            "Alexa open Cinema Sunshine Ticket"
-          ],
-          "name": "sskts-alexa-ticket",
-          "description": "Cinema Sunshine Ticket"
+          "name": "シネマサンシャインのチケット管理スキル",
+          "description": "シネマサンシャインチケット",
+          "smallIconUri": "https://s3-ap-northeast-1.amazonaws.com/sskts-alexa-ticket/icons/logo-cinema-square-108.png",
+          "largeIconUri": "https://s3-ap-northeast-1.amazonaws.com/sskts-alexa-ticket/icons/logo-cinema-square-512.png",
+          "keywords": [
+            "シネマサンシャイン"
+          ]
         }
       },
-      "isAvailableWorldwide": true,
-      "testingInstructions": "Sample Testing Instructions.",
-      "category": "EDUCATION_AND_REFERENCE",
-      "distributionCountries": []
+      "isAvailableWorldwide": false,
+      "distributionMode": "PUBLIC",
+      "testingInstructions": "「アレクサ、シネマサンシャインチケットを呼んで」と発言。",
+      "category": "MOVIE_SHOWTIMES",
+      "distributionCountries": [
+        "JP"
+      ]
+    },
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "usesPersonalInfo": false,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "locales": {
+        "ja-JP": {
+          "privacyPolicyUrl": "http://www.cinemasunshine.co.jp/privacy/",
+          "termsOfUseUrl": "http://www.cinemasunshine.co.jp/sitepolicy/"
+        }
+      }
     },
     "apis": {
       "custom": {

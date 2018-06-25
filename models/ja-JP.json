@@ -4,6 +4,106 @@
       "invocationName": "シネマサンシャインチケット",
       "types": [
         {
+          "name": "LIST_OF_CODE_NUMBER",
+          "values": [
+            {
+              "id": "1",
+              "name": {
+                "value": "1",
+                "synonyms": [
+                  "いち",
+                  "一"
+                ]
+              }
+            },
+            {
+              "id": "2",
+              "name": {
+                "value": "2",
+                "synonyms": [
+                  "に",
+                  "にい",
+                  "にー",
+                  "二"
+                ]
+              }
+            },
+            {
+              "id": "3",
+              "name": {
+                "value": "3",
+                "synonyms": [
+                  "さん",
+                  "三"
+                ]
+              }
+            },
+            {
+              "id": "4",
+              "name": {
+                "value": "4",
+                "synonyms": [
+                  "し",
+                  "よん",
+                  "四"
+                ]
+              }
+            },
+            {
+              "id": "5",
+              "name": {
+                "value": "5",
+                "synonyms": [
+                  "ご",
+                  "五"
+                ]
+              }
+            },
+            {
+              "id": "6",
+              "name": {
+                "value": "6",
+                "synonyms": [
+                  "ろく",
+                  "六"
+                ]
+              }
+            },
+            {
+              "id": "7",
+              "name": {
+                "value": "7",
+                "synonyms": [
+                  "なな",
+                  "しち",
+                  "七"
+                ]
+              }
+            },
+            {
+              "id": "8",
+              "name": {
+                "value": "8",
+                "synonyms": [
+                  "はち",
+                  "八"
+                ]
+              }
+            },
+            {
+              "id": "9",
+              "name": {
+                "value": "9",
+                "synonyms": [
+                  "きゅー",
+                  "きゅう",
+                  "九"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "LIST_OF_THEATERS",
           "values": [
             {
@@ -93,6 +193,16 @@
         },
         {
           "name": "AMAZON.YesIntent",
+          "samples": [
+            "はい",
+            "うん",
+            "お願い",
+            "よろしく",
+            "いいよ"
+          ]
+        },
+        {
+          "name": "AMAZON.NoIntent",
           "samples": []
         },
         {
@@ -125,16 +235,19 @@
             }
           ],
           "samples": [
+            "{date} {theater} で映画 {I_Want_To_Watch}",
             "{date} {theater} で {movie} {I_Want_To_Watch}",
+            "{date} 映画 {I_Want_To_Watch}",
             "{date} {movie} {I_Want_To_Watch}",
             "{date} {I_Want_To_Watch}",
             "{date}",
+            "{theater} で映画 {I_Want_To_Watch}",
             "{theater} で {movie} {I_Want_To_Watch}",
             "{theater} で {I_Want_To_Watch}",
             "{theater}",
+            "映画 {I_Want_To_Watch}",
             "{movie} {I_Want_To_Watch}",
-            "{movie}",
-            "映画 {I_Want_To_Watch}"
+            "{movie}"
           ]
         },
         {
@@ -142,7 +255,7 @@
           "slots": [
             {
               "name": "choice",
-              "type": "AMAZON.NUMBER"
+              "type": "LIST_OF_CODE_NUMBER"
             }
           ],
           "samples": [

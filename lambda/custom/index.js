@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const ssktsapi = require("@motionpicture/sskts-api-nodejs-client");
 const Alexa = require("ask-sdk-core");
-const moment = require("moment");
+const moment = require("moment-timezone");
 // Alexaスキルアプリでアカウントリンク設定が完了済の想定でこのコードは動作します。
 const authClient = new ssktsapi.auth.OAuth2({
     domain: process.env.API_AUTHORIZE_SERVER_DOMAIN,
@@ -27,7 +27,6 @@ authClient.setCredentials({
 console.log('authClient:', authClient);
 var OrderState;
 (function (OrderState) {
-    // Start = 'Start',
     /**
      * イベント開始時間選択中
      */
@@ -55,6 +54,15 @@ const theaters = [
         name: 'ユーカリが丘'
     }
 ];
+function login(handlerInput) {
+    if (handlerInput.requestEnvelope.session !== undefined) {
+        if (handlerInput.requestEnvelope.session.user.accessToken !== undefined) {
+            authClient.setCredentials({
+                access_token: handlerInput.requestEnvelope.session.user.accessToken
+            });
+        }
+    }
+}
 /**
  * スキル呼び出しハンドラー
  */
@@ -63,12 +71,20 @@ const LaunchRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'シネマサンシャインチケットへようこそ。ご用件をおっしゃってください。';
-        return handlerInput.responseBuilder
-            .speak(speechText)
-            .reprompt(speechText)
-            // .withSimpleCard('Hello World', speechText)
-            .getResponse();
+        return __awaiter(this, void 0, void 0, function* () {
+            login(handlerInput);
+            const personService = new ssktsapi.service.Person({
+                endpoint: process.env.API_ENDPOINT,
+                auth: authClient
+            });
+            const contact = yield personService.getContacts({ personId: 'me' });
+            const speechText = `${contact.familyName} ${contact.givenName}さん、シネマサンシャインチケットへようこそ。ご用件をおっしゃってください。`;
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt(speechText)
+                // .withSimpleCard('Hello World', speechText)
+                .getResponse();
+        });
     },
 };
 const HelloWorldIntentHandler = {
@@ -122,6 +138,7 @@ const StartOrderIntentHandler = {
     },
     handle(handlerInput) {
         return __awaiter(this, void 0, void 0, function* () {
+            login(handlerInput);
             // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
             const { requestEnvelope, attributesManager } = handlerInput;
             const request = requestEnvelope.request;
@@ -178,8 +195,8 @@ ${theaters.map((t) => `<break time="500ms"/>${t.name}`)}
                         let workPerformed = events.map((e) => e.superEvent.workPerformed);
                         const workPerformedNames = [...new Set(workPerformed.map((p) => p.name))];
                         speechText = `${sessionAttributes.date}
-<break time="500ms"/>${movieTheater.name.ja}における上映作品は以下の通りです。
-${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
+<break time="500ms"/>${movieTheater.name.ja}における上映作品が${workPerformedNames.length}件見つかりました。
+${workPerformedNames.map((n, index) => `<break time="500ms"/>${index + 1}つ目<break time="300ms"/>${n}`)}
 <break time="500ms"/>何をご覧になりますか？
 `;
                     }
@@ -210,22 +227,24 @@ ${workPerformedNames.map((n) => `<break time="500ms"/>${n}`)}
                 if (events.length === 0) {
                     speechText = `${sessionAttributes.date}
 <break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは見つかりませんでした。`;
+<break time="500ms"/>${movieName}<break time="300ms"/>のスケジュールは見つかりませんでした。`;
                 }
                 else {
                     const eventChoices = events.map((e, index) => {
                         return {
                             code: index + 1,
                             value: e.identifier,
-                            name: `${moment(e.startDate).format('HH:mm')} ${e.name.ja}`
+                            time: `${moment(e.startDate).tz('Asia/Tokyo').format('HH:mm')}`,
+                            name: `${e.name.ja}`
                         };
                     });
                     sessionAttributes.state = OrderState.SelectingEventTime;
                     sessionAttributes.eventChoices = eventChoices;
                     speechText = `${sessionAttributes.date}
 <break time="500ms"/>${movieTheater.name.ja}における
-<break time="500ms"/>${movieName}のスケジュールは以下の通りです。
-${eventChoices.map((c) => `<break time="1000ms"/>${c.code}番<break time="500ms"/>${c.name}`)}
+<break time="500ms"/>${movieName}<break time="300ms"/>のスケジュールが${eventChoices.length}件見つかりました。
+<break time="500ms"/>
+${eventChoices.map((c) => `<break time="1000ms"/>${c.code}番<break time="500ms"/>${c.time}<break time="500ms"/>${c.name}`)}
 <break time="500ms"/>どちらをご覧になりますか？番号でお答えください。`;
                 }
             }
@@ -248,6 +267,7 @@ const SelectEventTimeIntentHandler = {
     },
     handle(handlerInput) {
         return __awaiter(this, void 0, void 0, function* () {
+            login(handlerInput);
             // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
             const { requestEnvelope, attributesManager } = handlerInput;
             const request = requestEnvelope.request;
@@ -255,7 +275,11 @@ const SelectEventTimeIntentHandler = {
                 throw new Error('スロットが見つかりません');
             }
             console.log('request.intent.slots:', request.intent.slots);
-            const choice = request.intent.slots.choice.value;
+            const choice = (request.intent.slots !== undefined
+                && request.intent.slots.choice.resolutions !== undefined
+                && request.intent.slots.choice.resolutions.resolutionsPerAuthority !== undefined)
+                ? request.intent.slots.choice.resolutions.resolutionsPerAuthority[0].values[0].value.id
+                : undefined;
             const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
             let speechText = 'イベントが見つかりません。';
             // イベント検索
@@ -265,6 +289,11 @@ const SelectEventTimeIntentHandler = {
                     endpoint: process.env.API_ENDPOINT,
                     auth: authClient
                 });
+                const personService = new ssktsapi.service.Person({
+                    endpoint: process.env.API_ENDPOINT,
+                    auth: authClient
+                });
+                const contact = yield personService.getContacts({ personId: 'me' });
                 const event = yield eventService.findIndividualScreeningEvent({
                     identifier: eventChoice.value
                 });
@@ -273,10 +302,12 @@ const SelectEventTimeIntentHandler = {
                     sessionAttributes.state = OrderState.Confirming;
                     attributesManager.setSessionAttributes(sessionAttributes);
                     speechText = `<p>以下の通り注文を受け付けます。</p>
-        <p>${moment(event.startDate).format('YYYY-MM-DD HH:mm')}</p>
-        <p>${event.name.ja}</p>
-        <p>決済方法<break time="500ms"/>クレジットカード</p>
-        <p>注文を確定しますか？</p>`;
+<p>${contact.familyName} ${contact.givenName}さん</p>
+<p>${moment(event.startDate).tz('Asia/Tokyo').format('YYYY-MM-DD HH:mm')}</p>
+<p>${event.name.ja}</p>
+<p>${event.superEvent.location.name.ja}<break time="300ms"/>${event.location.name.ja}</p>
+<p>決済方法<break time="300ms"/>クレジットカード</p>
+<p>注文を確定しますか？</p>`;
                 }
             }
             return handlerInput.responseBuilder
@@ -314,6 +345,33 @@ const YesIntentHandler = {
         });
     }
 };
+/**
+ * Noハンドラー
+ */
+const NoIntentHandler = {
+    canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.NoIntent'
+            && state === OrderState.Confirming;
+    },
+    handle(handlerInput) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
+            const { attributesManager } = handlerInput;
+            // const request = <IntentRequest>requestEnvelope.request;
+            attributesManager.setSessionAttributes({
+                state: undefined
+            });
+            const speechText = '注文をキャンセルしました。';
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt(speechText)
+                .getResponse();
+        });
+    }
+};
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
@@ -335,6 +393,6 @@ const ErrorHandler = {
     },
 };
 exports.handler = Alexa.SkillBuilders.custom()
-    .addRequestHandlers(LaunchRequestHandler, HelloWorldIntentHandler, HelpIntentHandler, CancelAndStopIntentHandler, SessionEndedRequestHandler, YesIntentHandler, SelectEventTimeIntentHandler, StartOrderIntentHandler)
+    .addRequestHandlers(LaunchRequestHandler, HelloWorldIntentHandler, HelpIntentHandler, CancelAndStopIntentHandler, SessionEndedRequestHandler, YesIntentHandler, NoIntentHandler, SelectEventTimeIntentHandler, StartOrderIntentHandler)
     .addErrorHandlers(ErrorHandler)
     .lambda();
