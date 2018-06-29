@@ -136,8 +136,11 @@ const CancelAndStopIntentHandler: Alexa.RequestHandler = {
  */
 const StartOrderIntentHandler: Alexa.RequestHandler = {
     canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'StartOrder';
+            && handlerInput.requestEnvelope.request.intent.name === 'StartOrder'
+            && state === undefined;
     },
     async handle(handlerInput) {
         login(handlerInput);
@@ -357,12 +360,11 @@ const YesIntentHandler: Alexa.RequestHandler = {
             state: undefined
         });
 
-        const speechText = `座席を予約しました。
-ご来場お待ちしております。`;
+        const speechText = `座席を予約しました。ご来場お待ちしております。`;
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
+            // .reprompt(speechText)
             .getResponse();
     }
 }
@@ -391,7 +393,7 @@ const NoIntentHandler: Alexa.RequestHandler = {
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
+            // .reprompt(speechText)
             .getResponse();
     }
 }

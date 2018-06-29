@@ -133,8 +133,11 @@ const CancelAndStopIntentHandler = {
  */
 const StartOrderIntentHandler = {
     canHandle(handlerInput) {
+        const session = handlerInput.attributesManager.getSessionAttributes();
+        const state = session.state;
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'StartOrder';
+            && handlerInput.requestEnvelope.request.intent.name === 'StartOrder'
+            && state === undefined;
     },
     handle(handlerInput) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -336,11 +339,10 @@ const YesIntentHandler = {
             attributesManager.setSessionAttributes({
                 state: undefined
             });
-            const speechText = `座席を予約しました。
-ご来場お待ちしております。`;
+            const speechText = `座席を予約しました。ご来場お待ちしております。`;
             return handlerInput.responseBuilder
                 .speak(speechText)
-                .reprompt(speechText)
+                // .reprompt(speechText)
                 .getResponse();
         });
     }
@@ -367,7 +369,7 @@ const NoIntentHandler = {
             const speechText = '注文をキャンセルしました。';
             return handlerInput.responseBuilder
                 .speak(speechText)
-                .reprompt(speechText)
+                // .reprompt(speechText)
                 .getResponse();
         });
     }
