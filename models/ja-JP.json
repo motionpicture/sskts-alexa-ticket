@@ -1,0 +1,270 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "シネマサンシャインチケット",
+      "types": [
+        {
+          "name": "LIST_OF_CODE_NUMBER",
+          "values": [
+            {
+              "id": "1",
+              "name": {
+                "value": "1",
+                "synonyms": [
+                  "いち",
+                  "一"
+                ]
+              }
+            },
+            {
+              "id": "2",
+              "name": {
+                "value": "2",
+                "synonyms": [
+                  "に",
+                  "にい",
+                  "にー",
+                  "二"
+                ]
+              }
+            },
+            {
+              "id": "3",
+              "name": {
+                "value": "3",
+                "synonyms": [
+                  "さん",
+                  "三"
+                ]
+              }
+            },
+            {
+              "id": "4",
+              "name": {
+                "value": "4",
+                "synonyms": [
+                  "し",
+                  "よん",
+                  "四"
+                ]
+              }
+            },
+            {
+              "id": "5",
+              "name": {
+                "value": "5",
+                "synonyms": [
+                  "ご",
+                  "五"
+                ]
+              }
+            },
+            {
+              "id": "6",
+              "name": {
+                "value": "6",
+                "synonyms": [
+                  "ろく",
+                  "六"
+                ]
+              }
+            },
+            {
+              "id": "7",
+              "name": {
+                "value": "7",
+                "synonyms": [
+                  "なな",
+                  "しち",
+                  "七"
+                ]
+              }
+            },
+            {
+              "id": "8",
+              "name": {
+                "value": "8",
+                "synonyms": [
+                  "はち",
+                  "八"
+                ]
+              }
+            },
+            {
+              "id": "9",
+              "name": {
+                "value": "9",
+                "synonyms": [
+                  "きゅー",
+                  "きゅう",
+                  "九"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LIST_OF_THEATERS",
+          "values": [
+            {
+              "id": "101",
+              "name": {
+                "value": "池袋",
+                "synonyms": [
+                  "ぶくろ",
+                  "ブクロ",
+                  "有楽町",
+                  "新宿"
+                ]
+              }
+            },
+            {
+              "id": "112",
+              "name": {
+                "value": "北島",
+                "synonyms": [
+                  "きたじま",
+                  "キタジマ"
+                ]
+              }
+            },
+            {
+              "id": "118",
+              "name": {
+                "value": "姶良",
+                "synonyms": [
+                  "あいら",
+                  "アイラ",
+                  "鹿児島",
+                  "桜島"
+                ]
+              }
+            },
+            {
+              "id": "119",
+              "name": {
+                "value": "ユーカリが丘",
+                "synonyms": [
+                  "ゆうかりがおか",
+                  "ゆーかりがおか",
+                  "ゆうかり",
+                  "ゆーかり",
+                  "ユウカリガオカ",
+                  "ユーカリガオカ",
+                  "ユウカリ",
+                  "ユーカリ",
+                  "千葉"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "見たい",
+                "synonyms": [
+                  "を見たい",
+                  "が見たい",
+                  "予約したい",
+                  "を予約したい",
+                  "のスケジュール教えて",
+                  "で何やってる"
+                ]
+              }
+            }
+          ],
+          "name": "IWantToWatchType"
+        }
+      ],
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": [
+            "はい",
+            "うん",
+            "お願い",
+            "よろしく",
+            "いいよ"
+          ]
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": []
+        },
+        {
+          "name": "HelloWorldIntent",
+          "slots": [],
+          "samples": [
+            "こんにちは",
+            "こんにちはと言って",
+            "ハロー"
+          ]
+        },
+        {
+          "name": "StartOrder",
+          "slots": [
+            {
+              "name": "date",
+              "type": "AMAZON.DATE"
+            },
+            {
+              "name": "theater",
+              "type": "LIST_OF_THEATERS"
+            },
+            {
+              "name": "movie",
+              "type": "AMAZON.Movie"
+            },
+            {
+              "name": "I_Want_To_Watch",
+              "type": "IWantToWatchType"
+            }
+          ],
+          "samples": [
+            "{date} {theater} で映画 {I_Want_To_Watch}",
+            "{date} {theater} で {movie} {I_Want_To_Watch}",
+            "{date} 映画 {I_Want_To_Watch}",
+            "{date} {movie} {I_Want_To_Watch}",
+            "{date} {I_Want_To_Watch}",
+            "{date}",
+            "{theater} で映画 {I_Want_To_Watch}",
+            "{theater} で {movie} {I_Want_To_Watch}",
+            "{theater} で {I_Want_To_Watch}",
+            "{theater}",
+            "映画 {I_Want_To_Watch}",
+            "{movie} {I_Want_To_Watch}",
+            "{movie}"
+          ]
+        },
+        {
+          "name": "SelectEventTime",
+          "slots": [
+            {
+              "name": "choice",
+              "type": "LIST_OF_CODE_NUMBER"
+            }
+          ],
+          "samples": [
+            "{choice} 番",
+            "{choice} ばん",
+            "{choice}"
+          ]
+        }
+      ]
+    }
+  }
+}

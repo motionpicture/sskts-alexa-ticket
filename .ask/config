@@ -1,0 +1,44 @@
+{
+  "deploy_settings": {
+    "default": {
+      "skill_id": "amzn1.ask.skill.5dc35fae-b371-4fd5-902b-3c3be0feed1d",
+      "was_cloned": false,
+      "merge": {
+        "manifest": {
+          "apis": {
+            "custom": {
+              "endpoint": {
+                "uri": "ask-custom-sskts-alexa-ticket-default"
+              }
+            }
+          }
+        }
+      },
+      "resources": {
+        "manifest": {
+          "eTag": "dcb72ad5f4666a061d3c72f5d841cf9b"
+        },
+        "interactionModel": {
+          "en-US": {
+            "eTag": "edceaa72ac13757059cb768ccbdf3b67"
+          },
+          "ja-JP": {
+            "eTag": "a3bf07c5ead57388537b69cce7492edc"
+          }
+        },
+        "lambda": [
+          {
+            "arn": "arn:aws:lambda:us-east-1:253260029663:function:ask-custom-sskts-alexa-ticket-default",
+            "functionName": "ask-custom-sskts-alexa-ticket-default",
+            "awsRegion": "us-east-1",
+            "alexaUsage": [
+              "custom/default"
+            ],
+            "revisionId": "1dbac91f-1c94-44fb-b311-cf0492306714"
+          }
+        ]
+      },
+      "in_skill_products": []
+    }
+  }
+}
